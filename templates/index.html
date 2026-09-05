@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="vi" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kỳ Anh Dev MP3 - Tải Nhạc YouTube Chất Lượng Cao</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="h-full bg-gradient-to-br from-slate-900 via-zinc-900 to-zinc-950 text-slate-100 flex flex-col justify-between antialiased">
+
+    <!-- Header -->
+    <header class="w-full py-6 px-6 border-b border-slate-800/60 backdrop-blur-md bg-slate-900/40 sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div id="brandIcon" class="bg-pink-600 p-2.5 rounded-xl shadow-lg shadow-pink-600/30 flex items-center justify-center transition-colors duration-500">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight text-white">Kỳ Anh Dev MP3</h1>
+                    <p class="text-xs text-slate-400">Hệ thống trích xuất âm thanh trực tuyến</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button id="themeToggleBtn" title="Đổi màu ngẫu nhiên" class="px-3 py-1.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition cursor-pointer flex items-center space-x-1 shadow-sm">
+                    <span>🎨 Đổi màu</span>
+                </button>
+                <span id="badgeStatus" class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-pink-500/10 text-pink-400 border border-pink-500/20">
+                    <span id="dotStatus" class="w-1.5 h-1.5 mr-1.5 bg-pink-500 rounded-full animate-pulse"></span>
+                    Hệ thống hoạt động
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex items-center justify-center px-4 py-12">
+        <div class="w-full max-w-xl mx-auto">
+            <div class="bg-slate-800/50 backdrop-blur-xl border border-slate-700/60 rounded-2xl shadow-2xl p-6 sm:p-10 transition-all duration-300">
+                
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-2">Tải Nhạc YouTube Chất Lượng Cao</h2>
+                    <p class="text-sm text-slate-400">Dán đường dẫn video và lựa chọn định dạng âm thanh mong muốn.</p>
+                </div>
+
+                <form id="downloadForm" action="/download" method="POST" class="space-y-5">
+                    <!-- URL Input -->
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                            </svg>
+                        </div>
+                        <input type="text" name="url" id="urlInput" placeholder="https://www.youtube.com/watch?v=..." required
+                            class="w-full pl-11 pr-4 py-3.5 bg-slate-900/80 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm sm:text-base transition-all">
+                    </div>
+
+                    <!-- Quality Selector -->
+                    <div>
+                        <label for="qualitySelect" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Chất lượng âm thanh (Bitrate):</label>
+                        <div class="relative">
+                            <select name="quality" id="qualitySelect"
+                                class="w-full px-4 py-3 bg-slate-900/80 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm sm:text-base transition-all appearance-none cursor-pointer">
+                                <option value="128">128 kbps (Tiết kiệm dung lượng)</option>
+                                <option value="192" selected>192 kbps (Tiêu chuẩn phổ biến)</option>
+                                <option value="256">256 kbps (Chất lượng cao)</option>
+                                <option value="320">320 kbps (Cực cao - Studio)</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" id="submitBtn"
+                        class="w-full py-3.5 px-6 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-semibold rounded-xl shadow-lg shadow-pink-600/25 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all transform active:scale-[0.99] flex items-center justify-center space-x-2 text-sm sm:text-base cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                        <span id="btnText">Tải Xuống MP3 Ngay</span>
+                    </button>
+                </form>
+
+                <!-- Loading State Overlay -->
+                <div id="loadingState" class="hidden mt-6 p-4 bg-slate-900/60 border border-slate-700/50 rounded-xl flex items-center space-x-3 text-slate-300">
+                    <svg id="loadingSpinner" class="animate-spin h-5 w-5 text-pink-500 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <div class="text-xs sm:text-sm">
+                        <p class="font-medium text-white">Đang xử lý và chuyển đổi âm thanh...</p>
+                        <p class="text-slate-400">Quá trình này có thể mất từ vài giây đến 1 phút.</p>
+                    </div>
+                </div>
+
+                <!-- Features list -->
+                <div class="grid grid-cols-3 gap-3 mt-8 pt-6 border-t border-slate-700/60 text-center">
+                    <div class="p-2">
+                        <div class="feature-text text-pink-400 font-bold text-sm sm:text-base">Lên tới 320k</div>
+                        <div class="text-[11px] sm:text-xs text-slate-400 mt-0.5">Tùy chọn chất lượng</div>
+                    </div>
+                    <div class="p-2 border-x border-slate-700/60">
+                        <div class="feature-text text-pink-400 font-bold text-sm sm:text-base">Tốc độ cao</div>
+                        <div class="text-[11px] sm:text-xs text-slate-400 mt-0.5">Xử lý mượt mà</div>
+                    </div>
+                    <div class="p-2">
+                        <div class="feature-text text-pink-400 font-bold text-sm sm:text-base">Miễn phí</div>
+                        <div class="text-[11px] sm:text-xs text-slate-400 mt-0.5">Không giới hạn</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Professional Footer -->
+    <footer class="w-full py-6 px-6 border-t border-slate-800/60 bg-slate-900/40 text-center text-xs text-slate-500">
+        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p>&copy; 2026 <span class="text-slate-300 font-medium">Kỳ Anh Dev MP3</span>. All rights reserved.</p>
+            <div class="flex items-center space-x-6 text-slate-400 font-medium">
+                <button onclick="openModal('privacyModal')" class="hover:text-pink-400 transition cursor-pointer">Chính sách bảo mật</button>
+                <button onclick="openModal('termsModal')" class="hover:text-pink-400 transition cursor-pointer">Điều khoản sử dụng</button>
+                <button onclick="openModal('supportModal')" class="hover:text-pink-400 transition cursor-pointer">Hỗ trợ</button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modals -->
+    <!-- Privacy Policy Modal -->
+    <div id="privacyModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm hidden p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full p-6 text-left shadow-2xl relative">
+            <h3 class="text-xl font-bold text-white mb-3">Chính Sách Bảo Mật</h3>
+            <div class="text-sm text-slate-300 space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+                <p>Tại <strong>Kỳ Anh Dev MP3</strong>, chúng tôi cam kết bảo vệ tuyệt đối quyền riêng tư của người sử dụng.</p>
+                <p><strong>1. Dữ liệu thu thập:</strong> Chúng tôi chỉ xử lý đường dẫn (URL) video bạn cung cấp nhằm mục đích trích xuất và tải xuống âm thanh, không lưu trữ lịch sử cá nhân hay thông tin định danh của người dùng.</p>
+                <p><strong>2. Bảo mật file:</strong> Các file âm thanh sau khi chuyển đổi được xử lý trên hệ thống độc lập và tự động quản lý an toàn.</p>
+                <p><strong>3. Chia sẻ thông tin:</strong> Chúng tôi tuyệt đối không chia sẻ bất kỳ dữ liệu nào cho bên thứ ba.</p>
+            </div>
+            <div class="mt-6 text-right">
+                <button onclick="closeModal('privacyModal')" class="px-5 py-2 bg-pink-600 hover:bg-pink-500 text-white font-semibold rounded-xl text-sm transition cursor-pointer">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terms of Use Modal -->
+    <div id="termsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm hidden p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full p-6 text-left shadow-2xl relative">
+            <h3 class="text-xl font-bold text-white mb-3">Điều Khoản Sử Dụng</h3>
+            <div class="text-sm text-slate-300 space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+                <p>Khi sử dụng dịch vụ tại <strong>Kỳ Anh Dev MP3</strong>, bạn đồng ý với các điều khoản sau:</p>
+                <p><strong>1. Mục đích cá nhân:</strong> Dịch vụ được cung cấp hoàn toàn miễn phí phục vụ nhu cầu trích xuất âm thanh học tập và giải trí cá nhân.</p>
+                <p><strong>2. Bản quyền nội dung:</strong> Người dùng chịu hoàn toàn trách nhiệm khi sử dụng các tệp âm thanh tải xuống, đảm bảo tuân thủ các quy định bản quyền hiện hành đối với tác giả và chủ sở hữu video.</p>
+                <p><strong>3. Vận hành:</strong> Hệ thống được cung cấp "nguyên trạng" bởi Kỳ Anh Dev nhằm mang lại trải nghiệm tối ưu nhất.</p>
+            </div>
+            <div class="mt-6 text-right">
+                <button onclick="closeModal('termsModal')" class="px-5 py-2 bg-pink-600 hover:bg-pink-500 text-white font-semibold rounded-xl text-sm transition cursor-pointer">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Support Modal (with Facebook Link) -->
+    <div id="supportModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm hidden p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full p-6 text-left shadow-2xl relative">
+            <h3 class="text-xl font-bold text-white mb-3">Hỗ Trợ & Liên Hệ</h3>
+            <div class="text-sm text-slate-300 space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                <p>Bạn gặp sự cố khi tải video hoặc cần góp ý cải thiện tính năng? Hãy liên hệ trực tiếp với nhà phát triển:</p>
+                <div class="bg-slate-900/80 border border-slate-700/80 p-4 rounded-xl flex items-center justify-between">
+                    <div>
+                        <p class="font-semibold text-white">Kỳ Anh Dev</p>
+                        <p class="text-xs text-slate-400 mt-0.5">Hỗ trợ kỹ thuật & giải đáp thắc mắc 24/7</p>
+                    </div>
+                    <a href="https://www.facebook.com/profile.php?id=100055519196279" target="_blank"
+                       class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition shadow-md flex items-center space-x-1.5 shrink-0">
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                        </svg>
+                        <span>Facebook</span>
+                    </a>
+                </div>
+                <p class="text-xs text-slate-400">Cảm ơn bạn đã tin tưởng và sử dụng dịch vụ của Kỳ Anh Dev!</p>
+            </div>
+            <div class="mt-6 text-right">
+                <button onclick="closeModal('supportModal')" class="px-5 py-2 bg-pink-600 hover:bg-pink-500 text-white font-semibold rounded-xl text-sm transition cursor-pointer">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Modal functions
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        // Close modal when clicking outside content
+        window.addEventListener('click', (e) => {
+            ['privacyModal', 'termsModal', 'supportModal'].forEach(id => {
+                const modal = document.getElementById(id);
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            });
+        });
+
+        // Color themes array (Pink/Rose, Purple/Violet, Cyan/Blue, Emerald/Teal, Amber/Orange)
+        const themes = [
+            {
+                name: "Pink",
+                iconBg: "bg-pink-600",
+                shadow: "shadow-pink-600/30",
+                badgeBg: "bg-pink-500/10",
+                badgeText: "text-pink-400",
+                badgeBorder: "border-pink-500/20",
+                dotBg: "bg-pink-500",
+                ring: "focus:ring-pink-500",
+                btnBg: "from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 shadow-pink-600/25",
+                spinner: "text-pink-500",
+                featureText: "text-pink-400"
+            },
+            {
+                name: "Purple",
+                iconBg: "bg-purple-600",
+                shadow: "shadow-purple-600/30",
+                badgeBg: "bg-purple-500/10",
+                badgeText: "text-purple-400",
+                badgeBorder: "border-purple-500/20",
+                dotBg: "bg-purple-500",
+                ring: "focus:ring-purple-500",
+                btnBg: "from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-purple-600/25",
+                spinner: "text-purple-500",
+                featureText: "text-purple-400"
+            },
+            {
+                name: "Cyan",
+                iconBg: "bg-cyan-600",
+                shadow: "shadow-cyan-600/30",
+                badgeBg: "bg-cyan-500/10",
+                badgeText: "text-cyan-400",
+                badgeBorder: "border-cyan-500/20",
+                dotBg: "bg-cyan-500",
+                ring: "focus:ring-cyan-500",
+                btnBg: "from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 shadow-cyan-600/25",
+                spinner: "text-cyan-500",
+                featureText: "text-cyan-400"
+            },
+            {
+                name: "Emerald",
+                iconBg: "bg-emerald-600",
+                shadow: "shadow-emerald-600/30",
+                badgeBg: "bg-emerald-500/10",
+                badgeText: "text-emerald-400",
+                badgeBorder: "border-emerald-500/20",
+                dotBg: "bg-emerald-500",
+                ring: "focus:ring-emerald-500",
+                btnBg: "from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-600/25",
+                spinner: "text-emerald-500",
+                featureText: "text-emerald-400"
+            },
+            {
+                name: "Amber",
+                iconBg: "bg-amber-600",
+                shadow: "shadow-amber-600/30",
+                badgeBg: "bg-amber-500/10",
+                badgeText: "text-amber-400",
+                badgeBorder: "border-amber-500/20",
+                dotBg: "bg-amber-500",
+                ring: "focus:ring-amber-500",
+                btnBg: "from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-amber-600/25",
+                spinner: "text-amber-500",
+                featureText: "text-amber-400"
+            }
+        ];
+
+        let currentThemeIndex = 0;
+
+        function applyTheme(index) {
+            const t = themes[index];
+            
+            const brandIcon = document.getElementById('brandIcon');
+            brandIcon.className = `p-2.5 rounded-xl shadow-lg flex items-center justify-center transition-colors duration-500 ${t.iconBg} ${t.shadow}`;
+
+            const badgeStatus = document.getElementById('badgeStatus');
+            badgeStatus.className = `inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border transition-colors duration-500 ${t.badgeBg} ${t.badgeText} ${t.badgeBorder}`;
+            const dotStatus = document.getElementById('dotStatus');
+            dotStatus.className = `w-1.5 h-1.5 mr-1.5 rounded-full animate-pulse ${t.dotBg}`;
+
+            const urlInput = document.getElementById('urlInput');
+            urlInput.className = `w-full pl-11 pr-4 py-3.5 bg-slate-900/80 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 ${t.ring} focus:border-transparent text-sm sm:text-base transition-all`;
+
+            const qualitySelect = document.getElementById('qualitySelect');
+            qualitySelect.className = `w-full px-4 py-3 bg-slate-900/80 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 ${t.ring} focus:border-transparent text-sm sm:text-base transition-all appearance-none cursor-pointer`;
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.className = `w-full py-3.5 px-6 bg-gradient-to-r text-white font-semibold rounded-xl shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all transform active:scale-[0.99] flex items-center justify-center space-x-2 text-sm sm:text-base cursor-pointer ${t.btnBg} ${t.ring}`;
+
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            loadingSpinner.className = `animate-spin h-5 w-5 shrink-0 ${t.spinner}`;
+
+            document.querySelectorAll('.feature-text').forEach(el => {
+                el.className = `feature-text font-bold text-sm sm:text-base ${t.featureText}`;
+            });
+        }
+
+        document.getElementById('themeToggleBtn').addEventListener('click', () => {
+            currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+            applyTheme(currentThemeIndex);
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            currentThemeIndex = Math.floor(Math.random() * themes.length);
+            applyTheme(currentThemeIndex);
+        });
+
+        const form = document.getElementById('downloadForm');
+        const loadingState = document.getElementById('loadingState');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+
+        form.addEventListener('submit', () => {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+            btnText.textContent = 'Đang xử lý...';
+            loadingState.classList.remove('hidden');
+
+            setTimeout(() => {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                btnText.textContent = 'Tải Xuống MP3 Ngay';
+                loadingState.classList.add('hidden');
+            }, 6000);
+        });
+    </script>
+</body>
+</html>
