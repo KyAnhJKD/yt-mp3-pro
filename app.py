@@ -30,6 +30,12 @@ YOUTUBE_CLIENT_FALLBACKS = (
     ["mweb", "web"],
     ["web"],
 )
+# Audio: thử ít client hơn vì audio thường OK với web là xong
+AUDIO_CLIENT_FALLBACKS = (
+    ["web"],
+    ["web", "android"],
+    ["android"],
+)
 # --- PO Token (datacenter IP thuong can) theo wiki https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide ---
 # bgutil-ytdlp-pot-provider tu dong dang ki plugin vao yt_dlp_plugins/ ;
 # provider "http" dung luon khi co node (JS runtime) de solve BotGuard attestation.
@@ -40,10 +46,9 @@ BASE_YDL_OPTS = {
     "quiet": True,
     "no_warnings": True,
     "windowsfilenames": True,
-    "socket_timeout": 30,
-    "retries": 3,
-    "fragment_retries": 3,
-    "extractor_retries": 3,
+    "socket_timeout": 15,  # giam 30s -> 15s cho nhanh
+    "retries": 2,           # giam 3 -> 2
+    "fragment_retries": 2,  # giam 3 -> 2
     "concurrent_fragment_downloads": 4,
     # --- EJS (External JS Scripts) theo wiki https://github.com/yt-dlp/yt-dlp/wiki/EJS ---
     # YouTube bat giai ma JS challenge bang runtime ngoai (Deno/Node/QuickJS)
@@ -163,11 +168,14 @@ def with_client(opts, clients):
     return out
 
 
-def extract_with_fallback(url, base_opts, download, format_fallbacks=()):
-    """Thử lần lượt các player_client YouTube cho tới khi thành công."""
+def extract_with_fallback(url, base_opts, download, format_fallbacks=(), client_fallbacks=None):
+    """Thử lần lượt các player_client YouTube cho tới khi thành công.
+    client_fallbacks=None dùng YOUTUBE_CLIENT_FALLBACKS (video), truyền AUDIO_CLIENT_FALLBACKS cho audio (nhanh hơn)."""
+    if client_fallbacks is None:
+        client_fallbacks = YOUTUBE_CLIENT_FALLBACKS
     last_exc = None
     format_tries = [None] + list(format_fallbacks or [])
-    for clients in YOUTUBE_CLIENT_FALLBACKS:
+    for clients in client_fallbacks:
         for fmt in format_tries:
             opts = with_client(base_opts, clients)
             if fmt is not None:
@@ -191,7 +199,9 @@ def extract_with_fallback(url, base_opts, download, format_fallbacks=()):
 def build_audio_opts(id_tag, quality):
     opts = dict(BASE_YDL_OPTS)
     opts.update({
-        "format": "bestaudio/best",
+        # bestaudio[ext=m4a] = audio-only, không cần merge video -> nhanh hơn nhiều
+        # fallback: webm audio -> bestaudio -> best (video+audio, chậm nhưng luôn có)
+        "format": "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best",
         "outtmpl": os.path.join(DOWNLOAD_FOLDER, "%s_%%(title)s.%%(ext)s" % id_tag),
         "ffmpeg_location": FFMPEG_PATH,
         "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": quality}],
@@ -328,7 +338,8 @@ def download():
         if quality not in AUDIO_QUALITIES:
             quality = "192"
         ydl_opts = build_audio_opts(id_tag, quality)
-        info, _opts = extract_with_fallback(url, ydl_opts, download=True, format_fallbacks=("bestaudio/best", "best"))
+        # Audio: dùng AUDIO_CLIENT_FALLBACKS (3 client thay vì 5) + format đã có m4a/webm fallback
+        info, _opts = extract_with_fallback(url, ydl_opts, download=True, format_fallbacks=("bestaudio/best", "best"), client_fallbacks=AUDIO_CLIENT_FALLBACKS)
         filepath = find_downloaded_file(id_tag)
         if not filepath or not os.path.isfile(filepath):
             return "Tai MP3 that bai: khong tim thay file sau khi chuyen doi.", 500
