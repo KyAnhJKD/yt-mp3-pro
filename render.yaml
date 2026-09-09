@@ -1,0 +1,12 @@
+# Render Blueprint — ép buộc deploy bằng Dockerfile (có Node.js 22 cho EJS/JS solver)
+# Xem: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: yt-mp3-pro
+    env: docker
+    plan: free
+    healthCheckPath: /ejs
+    envVars:
+      - key: PORT
+        value: "10000"
+    buildCommand: ""

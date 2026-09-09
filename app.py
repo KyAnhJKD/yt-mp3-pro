@@ -24,12 +24,15 @@ AUDIO_QUALITIES = {"128", "192", "256", "320"}
 # Client YouTube thử theo thứ tự: web trước (đủ format FullHD-4K),
 # rớt sang android/ios/mweb khi bị chặn "Could not extract any player response".
 YOUTUBE_CLIENT_FALLBACKS = (
-    ["web"],
     ["web", "android"],
     ["android", "ios"],
     ["android"],
     ["mweb"],
+    ["web"],
 )
+# PO token provider (máy chủ datacenter / IP bị chặn thường cần PO token cho GVS web).
+# Tham khảo: https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide
+POT_PROVIDER_URL = os.environ.get("YTDLP_PO_PROVIDER", "")  # vd: http://bgutil-pot-provider:8080
 BASE_YDL_OPTS = {
     "noplaylist": True,
     "quiet": True,
@@ -48,8 +51,36 @@ BASE_YDL_OPTS = {
 }
 
 
+from pathlib import Path
+from contextlib import contextmanager
+import subprocess
+try:
+    import bgutil_pot
+    from bgutil_pot import BGUtil
+    _BGUTIL_OK = True
+    BGUTIL_VER = getattr(bgutil_pot, "__version__", None) or "unknown"
+except Exception:
+    _BGUTIL_OK = False
+    BGUTIL_VER = None
+
+
+@contextmanager
+def po_token_for(video_id=""):
+    """Cap 1 PO token tu bgutil trong vong 30s (datacenter IP). Tra ve token string."""
+    if not _BGUTIL_OK:
+        yield None
+    else:
+        try:
+            util = BGUtil()
+            token = util.get_po_token(video_id=video_id) if video_id else util.get_po_token()
+            yield token
+        except Exception as exc:
+            logger.warning("bgutil pot failed: %s", exc)
+            yield None
+
+
 def get_ejs_status():
-    """Kiem tra runtime JS + goi yt-dlp-ejs (de hien thi /ejs + log khi start)."""
+    """Kiem tra runtime JS + goi yt-dlp-ejs + PO token (de hien thi /ejs + log khi start)."""
     runtimes = {}
     for exe in ("deno", "node", "quickjs"):
         path = shutil.which(exe)
@@ -75,8 +106,9 @@ def get_ejs_status():
     except Exception as exc:
         opts_ok = False
         logger.warning("EJS opts not supported by installed yt-dlp: %s", exc)
-    ready = bool(ejs_ver or True) and any(v["ok"] for v in runtimes.values()) and opts_ok
-    return {"runtimes": runtimes, "ejs_package": ejs_ver, "opts_ok": opts_ok, "ready": ready,
+    ready = (any(v["ok"] for v in runtimes.values()) and opts_ok)
+    return {"runtimes": runtimes, "ejs_package": ejs_ver, "bgutil": (BGUTIL_VER, _BGUTIL_OK),
+            "opts_ok": opts_ok, "ready": ready, "po_provider": POT_PROVIDER_URL or "(khong cau hinh)",
             "ytdlp": yt_dlp.version.__version__}
 
 
@@ -130,8 +162,14 @@ def is_player_response_error(exc):
 
 def with_client(opts, clients):
     out = dict(opts)
-    out["extractor_args"] = {"youtube": {"player_client": list(clients)}}
-    # Dam bao EJS opts luon di kem moi request (ke ca khi goi voi base_opts cu)
+    ya = {"player_client": list(clients)}
+    # PO token provider (datacenter IP thuong can) - giu nguyen qua ca client fallback.
+    # Tham khao: https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide
+    if POT_PROVIDER_URL:
+        ya["po_token"] = "true"
+        ya["pot_provider_url"] = POT_PROVIDER_URL
+    out["extractor_args"] = {"youtube": ya}
+    # Dam bao EJS opts luon di kem moi request (ke ca khi goi voi base_opts cu).
     out.setdefault("js_runtimes", BASE_YDL_OPTS["js_runtimes"])
     out.setdefault("remote_components", BASE_YDL_OPTS["remote_components"])
     return out
@@ -189,9 +227,12 @@ def friendly_error(exc, with_code=False):
     raw = str(exc or "")
     low = raw.lower()
     if "could not extract any player response" in low or "unable to extract player response" in low:
-        msg = ("YouTube doi co che trinh phat (can EJS: JS runtime + yt-dlp-ejs). "
-               "Server da bat EJS (node/deno + ejs:github) va tu thu lai nhieu player_client. "
-               "Neu van loi: mo /ejs de kiem tra runtime, doi vai phut thu lai, hoac cap nhat yt-dlp (pip install -U \"yt-dlp[default]\"). "
+        msg = ("YouTube bat JS challenge nhung server chua giai duoc (can EJS + PO token). "
+               "Server da cau hinh: js_runtimes = %s, remote_components = ejs:github, "
+               "player_client fallback = web,android/ios/mweb. "
+               "Neu van loi: server cua ban dang dung IP datacenter bi chan. "
+               "Cai offline yt-dlp: pip install -U \"yt-dlp[default]\"; kiem tra Node/Deno: de /ejs; "
+               "hoac cau hinh PO token provider (env YTDLP_PO_PROVIDER). "
                "Chi tiet: https://github.com/yt-dlp/yt-dlp/wiki/EJS")
         code = 502
     elif "requested format is not available" in low:
@@ -230,8 +271,10 @@ def cleanup_old_files(max_age_seconds=3600):
 
 @app.route("/ejs")
 def ejs():
-    """Endpoint chuan doan EJS theo wiki: runtime + yt-dlp-ejs + options."""
-    return jsonify({"ok": True, "ejs": get_ejs_status()})
+    """Endpoint chuẩn đoạn EJS/PO theo wiki: runtime + yt-dlp-ejs + options."""
+    status = get_ejs_status()
+    status["po_token_provider"] = POT_PROVIDER_URL or "(không cau hinh)"
+    return jsonify({"ok": True, "ejs": status})
 
 
 @app.route("/")

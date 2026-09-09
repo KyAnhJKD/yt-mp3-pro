@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+from python:3.12-slim
 
 # Install system dependencies including ffmpeg + Node.js (>=22 per yt-dlp EJS wiki)
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -16,10 +16,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-EXPOSE 7860
+EXPOSE 10000
 
-CMD ["gunicorn", "--bind", "0.0.0.0:7860", "app:app", "--timeout", "600", "--workers", "2"]
+# Render cung cấp $PORT (mặc định 10000); fallback nếu chạy local
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-10000} app:app --timeout 600 --workers 2"]
