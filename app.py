@@ -21,20 +21,15 @@ try:
 except Exception:
     FFMPEG_PATH = "ffmpeg"
 AUDIO_QUALITIES = {"128", "192", "256", "320"}
-# Client YouTube thử theo thứ tự: web trước (đủ format FullHD-4K),
-# rớt sang android/ios/mweb khi bị chặn "Could not extract any player response".
+# Client YouTube: chi thu 2 client (web+android la ok nhieu), tranh timeout 30s cua Render/gunicorn
 YOUTUBE_CLIENT_FALLBACKS = (
     ["web", "android"],
-    ["android", "ios"],
-    ["android"],
-    ["mweb", "web"],
-    ["web"],
+    ["android", "web"],
 )
-# Audio: thử ít client hơn vì audio thường OK với web là xong
+# Audio: web+android (nhieu video can android de co format audio)
 AUDIO_CLIENT_FALLBACKS = (
-    ["web"],
     ["web", "android"],
-    ["android"],
+    ["android", "web"],
 )
 # --- PO Token (datacenter IP thuong can) theo wiki https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide ---
 # bgutil-ytdlp-pot-provider tu dong dang ki plugin vao yt_dlp_plugins/ ;
@@ -46,9 +41,9 @@ BASE_YDL_OPTS = {
     "quiet": True,
     "no_warnings": True,
     "windowsfilenames": True,
-    "socket_timeout": 15,  # giam 30s -> 15s cho nhanh
-    "retries": 2,           # giam 3 -> 2
-    "fragment_retries": 2,  # giam 3 -> 2
+    "socket_timeout": 10,  # giam 15s -> 10s cho nhanh
+    "retries": 1,           # giam 2 -> 1 (audio chi can 1 lan)
+    "fragment_retries": 1,  # giam 2 -> 1
     "concurrent_fragment_downloads": 4,
     # --- EJS (External JS Scripts) theo wiki https://github.com/yt-dlp/yt-dlp/wiki/EJS ---
     # YouTube bat giai ma JS challenge bang runtime ngoai (Deno/Node/QuickJS)
@@ -338,8 +333,8 @@ def download():
         if quality not in AUDIO_QUALITIES:
             quality = "192"
         ydl_opts = build_audio_opts(id_tag, quality)
-        # Audio: dùng AUDIO_CLIENT_FALLBACKS (3 client thay vì 5) + format đã có m4a/webm fallback
-        info, _opts = extract_with_fallback(url, ydl_opts, download=True, format_fallbacks=("bestaudio/best", "best"), client_fallbacks=AUDIO_CLIENT_FALLBACKS)
+        # Audio: chi thu 1 client, format da co m4a/webm fallback trong build_audio_opts
+        info, _opts = extract_with_fallback(url, ydl_opts, download=True, client_fallbacks=AUDIO_CLIENT_FALLBACKS)
         filepath = find_downloaded_file(id_tag)
         if not filepath or not os.path.isfile(filepath):
             return "Tai MP3 that bai: khong tim thay file sau khi chuyen doi.", 500
