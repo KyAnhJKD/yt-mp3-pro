@@ -44,8 +44,8 @@
             <div class="bg-slate-800/50 backdrop-blur-xl border border-slate-700/60 rounded-2xl shadow-2xl p-6 sm:p-10 transition-all duration-300">
                 
                 <div class="text-center mb-8">
-                    <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-2">Tải Nhạc YouTube Chất Lượng Cao</h2>
-                    <p class="text-sm text-slate-400">Dán đường dẫn video và lựa chọn định dạng âm thanh mong muốn.</p>
+                    <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-2">Tải Nhạc & Video YouTube Chất Lượng Cao</h2>
+                    <p class="text-sm text-slate-400">Dán đường dẫn video, chọn MP3 hoặc MP4 rồi chọn chất lượng mong muốn (MP4 lên tới 4K).</p>
                 </div>
 
                 <form id="downloadForm" action="/download" method="POST" class="space-y-5">
@@ -60,9 +60,24 @@
                             class="w-full pl-11 pr-4 py-3.5 bg-slate-900/80 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm sm:text-base transition-all">
                     </div>
 
+                    <!-- Type Selector -->
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Định dạng tải xuống:</label>
+                        <div class="grid grid-cols-2 gap-2 p-1 bg-slate-900/80 border border-slate-700 rounded-xl">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="type" value="audio" id="typeAudio" class="peer hidden" checked>
+                                <span class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-400 peer-checked:bg-pink-600 peer-checked:text-white peer-checked:shadow-lg transition-all">🎵 MP3 - Âm thanh</span>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="type" value="video" id="typeVideo" class="peer hidden">
+                                <span class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-400 peer-checked:bg-pink-600 peer-checked:text-white peer-checked:shadow-lg transition-all">🎬 MP4 - Video</span>
+                            </label>
+                        </div>
+                    </div>
+
                     <!-- Quality Selector -->
                     <div>
-                        <label for="qualitySelect" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Chất lượng âm thanh (Bitrate):</label>
+                        <label for="qualitySelect" id="qualityLabel" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Chất lượng âm thanh (Bitrate):</label>
                         <div class="relative">
                             <select name="quality" id="qualitySelect"
                                 class="w-full px-4 py-3 bg-slate-900/80 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm sm:text-base transition-all appearance-none cursor-pointer">
@@ -70,6 +85,12 @@
                                 <option value="192" selected>192 kbps (Tiêu chuẩn phổ biến)</option>
                                 <option value="256">256 kbps (Chất lượng cao)</option>
                                 <option value="320">320 kbps (Cực cao - Studio)</option>
+                                <option value="480" data-video="1">480p SD (Video MP4 nhẹ)</option>
+                                <option value="720" data-video="1">720p HD (Video MP4)</option>
+                                <option value="1080" data-video="1">1080p Full HD (Video MP4)</option>
+                                <option value="1440" data-video="1">1440p 2K QHD (Video MP4)</option>
+                                <option value="2160" data-video="1">2160p 4K UHD (Video MP4)</option>
+                                <option value="best" data-video="1">Tốt nhất (lên tới 4K/8K nếu có)</option>
                             </select>
                             <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -85,7 +106,7 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                         </svg>
-                        <span id="btnText">Tải Xuống MP3 Ngay</span>
+                        <span id="btnText">Tải Xuống Ngay</span>
                     </button>
                 </form>
 
@@ -96,15 +117,15 @@
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                     <div class="text-xs sm:text-sm">
-                        <p class="font-medium text-white">Đang xử lý và chuyển đổi âm thanh...</p>
-                        <p class="text-slate-400">Quá trình này có thể mất từ vài giây đến 1 phút.</p>
+                        <p class="font-medium text-white" id="loadingTitle">Đang xử lý và chuyển đổi...</p>
+                        <p class="text-slate-400">MP3 thường mất vài giây - 1 phút. Video Full HD tới 4K có thể mất vài phút do phải gộp hình + tiếng.</p>
                     </div>
                 </div>
 
                 <!-- Features list -->
                 <div class="grid grid-cols-3 gap-3 mt-8 pt-6 border-t border-slate-700/60 text-center">
                     <div class="p-2">
-                        <div class="feature-text text-pink-400 font-bold text-sm sm:text-base">Lên tới 320k</div>
+                        <div class="feature-text text-pink-400 font-bold text-sm sm:text-base">MP3 320k + MP4 4K</div>
                         <div class="text-[11px] sm:text-xs text-slate-400 mt-0.5">Tùy chọn chất lượng</div>
                     </div>
                     <div class="p-2 border-x border-slate-700/60">
@@ -298,11 +319,11 @@
             const urlInput = document.getElementById('urlInput');
             urlInput.className = `w-full pl-11 pr-4 py-3.5 bg-slate-900/80 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 ${t.ring} focus:border-transparent text-sm sm:text-base transition-all`;
 
-            const qualitySelect = document.getElementById('qualitySelect');
-            qualitySelect.className = `w-full px-4 py-3 bg-slate-900/80 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 ${t.ring} focus:border-transparent text-sm sm:text-base transition-all appearance-none cursor-pointer`;
+            const qualitySelectEl = document.getElementById('qualitySelect');
+            qualitySelectEl.className = `w-full px-4 py-3 bg-slate-900/80 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 ${t.ring} focus:border-transparent text-sm sm:text-base transition-all appearance-none cursor-pointer`;
 
-            const submitBtn = document.getElementById('submitBtn');
-            submitBtn.className = `w-full py-3.5 px-6 bg-gradient-to-r text-white font-semibold rounded-xl shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all transform active:scale-[0.99] flex items-center justify-center space-x-2 text-sm sm:text-base cursor-pointer ${t.btnBg} ${t.ring}`;
+            const submitBtnEl = document.getElementById('submitBtn');
+            submitBtnEl.className = `w-full py-3.5 px-6 bg-gradient-to-r text-white font-semibold rounded-xl shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all transform active:scale-[0.99] flex items-center justify-center space-x-2 text-sm sm:text-base cursor-pointer ${t.btnBg} ${t.ring}`;
 
             const loadingSpinner = document.getElementById('loadingSpinner');
             loadingSpinner.className = `animate-spin h-5 w-5 shrink-0 ${t.spinner}`;
@@ -326,19 +347,56 @@
         const loadingState = document.getElementById('loadingState');
         const submitBtn = document.getElementById('submitBtn');
         const btnText = document.getElementById('btnText');
+        const qualitySelect = document.getElementById('qualitySelect');
+        const qualityLabel = document.getElementById('qualityLabel');
+        const loadingTitle = document.getElementById('loadingTitle');
+        const typeAudio = document.getElementById('typeAudio');
+        const typeVideo = document.getElementById('typeVideo');
+
+        function syncQualityOptions() {
+            const isVideo = typeVideo.checked;
+            Array.from(qualitySelect.options).forEach(opt => {
+                const isV = opt.getAttribute('data-video') === '1';
+                opt.hidden = isVideo ? !isV : isV;
+            });
+            if (isVideo) {
+                qualityLabel.textContent = 'Chất lượng video (Full HD đến 4K):';
+                qualitySelect.value = '1080';
+                btnText.textContent = 'Tải Xuống MP4 Ngay';
+                if (loadingTitle) loadingTitle.textContent = 'Đang tải và gộp video (có thể mất vài phút với 4K)...';
+            } else {
+                qualityLabel.textContent = 'Chất lượng âm thanh (Bitrate):';
+                qualitySelect.value = '192';
+                btnText.textContent = 'Tải Xuống MP3 Ngay';
+                if (loadingTitle) loadingTitle.textContent = 'Đang xử lý và chuyển đổi âm thanh...';
+            }
+        }
+
+        typeAudio.addEventListener('change', syncQualityOptions);
+        typeVideo.addEventListener('change', syncQualityOptions);
+        qualitySelect.addEventListener('change', () => {
+            const opt = qualitySelect.selectedOptions[0];
+            const isV = opt && opt.getAttribute('data-video') === '1';
+            // Tự đảo tab nếu user chọn nhầm nhóm (giữ tương thích backend)
+            if (isV && typeAudio.checked) { typeVideo.checked = true; syncQualityOptions(); qualitySelect.value = opt.value; btnText.textContent = 'Tải Xuống MP4 Ngay'; }
+            if (!isV && typeVideo.checked) { typeAudio.checked = true; syncQualityOptions(); qualitySelect.value = opt.value; btnText.textContent = 'Tải Xuống MP3 Ngay'; }
+        });
+        syncQualityOptions();
 
         form.addEventListener('submit', () => {
+            const isVideo = typeVideo.checked;
             submitBtn.disabled = true;
             submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
             btnText.textContent = 'Đang xử lý...';
+            if (loadingTitle) loadingTitle.textContent = isVideo ? 'Đang tải và gộp video (Full HD - 4K, vui lòng chờ)...' : 'Đang xử lý và chuyển đổi âm thanh...';
             loadingState.classList.remove('hidden');
 
             setTimeout(() => {
                 submitBtn.disabled = false;
                 submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
-                btnText.textContent = 'Tải Xuống MP3 Ngay';
+                btnText.textContent = isVideo ? 'Tải Xuống MP4 Ngay' : 'Tải Xuống MP3 Ngay';
                 loadingState.classList.add('hidden');
-            }, 6000);
+            }, isVideo ? 180000 : 60000);
         });
     </script>
 </body>
