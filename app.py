@@ -4,6 +4,8 @@ import uuid
 import glob
 import time
 import logging
+import shutil
+import subprocess
 from flask import Flask, render_template, request, send_file, jsonify, after_this_request
 import yt_dlp
 import imageio_ffmpeg
@@ -38,7 +40,48 @@ BASE_YDL_OPTS = {
     "fragment_retries": 3,
     "extractor_retries": 3,
     "concurrent_fragment_downloads": 4,
+    # --- EJS (External JS Scripts) theo wiki https://github.com/yt-dlp/yt-dlp/wiki/EJS ---
+    # YouTube bat giai ma JS challenge bang runtime ngoai (Deno/Node/QuickJS)
+    # + script yt-dlp-ejs. Bat ca 2 de tu fallback runtime kha dung.
+    "js_runtimes": {"node": {}, "deno": {}, "quickjs": {}},
+    "remote_components": ["ejs:github"],
 }
+
+
+def get_ejs_status():
+    """Kiem tra runtime JS + goi yt-dlp-ejs (de hien thi /ejs + log khi start)."""
+    runtimes = {}
+    for exe in ("deno", "node", "quickjs"):
+        path = shutil.which(exe)
+        ver = None
+        if path:
+            try:
+                flag = "--version" if exe != "deno" else "--version"
+                out = subprocess.run([path, flag], capture_output=True, text=True, timeout=10)
+                ver = (out.stdout or out.stderr or "").strip().splitlines()[0][:80] if (out.stdout or out.stderr) else None
+            except Exception:
+                ver = None
+        runtimes[exe] = {"path": path, "version": ver, "ok": bool(path)}
+    try:
+        import importlib.metadata as md
+        ejs_ver = md.version("yt-dlp-ejs")
+    except Exception:
+        ejs_ver = None
+    # yt-dlp >= 2025.x moi ho tro js_runtimes/remote_components
+    opts_ok = True
+    try:
+        with yt_dlp.YoutubeDL(dict(BASE_YDL_OPTS, quiet=True, skip_download=True)):
+            pass
+    except Exception as exc:
+        opts_ok = False
+        logger.warning("EJS opts not supported by installed yt-dlp: %s", exc)
+    ready = bool(ejs_ver or True) and any(v["ok"] for v in runtimes.values()) and opts_ok
+    return {"runtimes": runtimes, "ejs_package": ejs_ver, "opts_ok": opts_ok, "ready": ready,
+            "ytdlp": yt_dlp.version.__version__}
+
+
+EJS_STATUS = get_ejs_status()
+logger.info("EJS status: %s", EJS_STATUS)
 VIDEO_QUALITIES = {
     "480": {"label": "480p (SD)", "height": 480, "format": "bestvideo[height<=480]+bestaudio/best[height<=480]/best"},
     "720": {"label": "720p (HD)", "height": 720, "format": "bestvideo[height<=720]+bestaudio/best[height<=720]/best"},
@@ -88,6 +131,9 @@ def is_player_response_error(exc):
 def with_client(opts, clients):
     out = dict(opts)
     out["extractor_args"] = {"youtube": {"player_client": list(clients)}}
+    # Dam bao EJS opts luon di kem moi request (ke ca khi goi voi base_opts cu)
+    out.setdefault("js_runtimes", BASE_YDL_OPTS["js_runtimes"])
+    out.setdefault("remote_components", BASE_YDL_OPTS["remote_components"])
     return out
 
 
@@ -143,9 +189,10 @@ def friendly_error(exc, with_code=False):
     raw = str(exc or "")
     low = raw.lower()
     if "could not extract any player response" in low or "unable to extract player response" in low:
-        msg = ("YouTube vua doi co che trinh phat nen phien ban yt-dlp hien tai tam thoi khong doc duoc video nay. "
-               "Da tu thu lai bang nhieu player_client (web/android/ios/mweb). "
-               "Hay thu lai sau vai phut, doi link khac, hoac cap nhat yt-dlp len ban moi nhat (pip install -U yt-dlp).")
+        msg = ("YouTube doi co che trinh phat (can EJS: JS runtime + yt-dlp-ejs). "
+               "Server da bat EJS (node/deno + ejs:github) va tu thu lai nhieu player_client. "
+               "Neu van loi: mo /ejs de kiem tra runtime, doi vai phut thu lai, hoac cap nhat yt-dlp (pip install -U \"yt-dlp[default]\"). "
+               "Chi tiet: https://github.com/yt-dlp/yt-dlp/wiki/EJS")
         code = 502
     elif "requested format is not available" in low:
         msg = ("Video nay khong co dung dinh dang/chat luong da chon (dac biet voi 4K). "
@@ -179,6 +226,12 @@ def cleanup_old_files(max_age_seconds=3600):
                 pass
     except Exception as exc:
         logger.warning("cleanup_old_files failed: %s", exc)
+
+
+@app.route("/ejs")
+def ejs():
+    """Endpoint chuan doan EJS theo wiki: runtime + yt-dlp-ejs + options."""
+    return jsonify({"ok": True, "ejs": get_ejs_status()})
 
 
 @app.route("/")
