@@ -27,12 +27,14 @@ YOUTUBE_CLIENT_FALLBACKS = (
     ["web", "android"],
     ["android", "ios"],
     ["android"],
-    ["mweb"],
+    ["mweb", "web"],
     ["web"],
 )
-# PO token provider (máy chủ datacenter / IP bị chặn thường cần PO token cho GVS web).
-# Tham khảo: https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide
-POT_PROVIDER_URL = os.environ.get("YTDLP_PO_PROVIDER", "")  # vd: http://bgutil-pot-provider:8080
+# --- PO Token (datacenter IP thuong can) theo wiki https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide ---
+# bgutil-ytdlp-pot-provider tu dong dang ki plugin vao yt_dlp_plugins/ ;
+# provider "http" dung luon khi co node (JS runtime) de solve BotGuard attestation.
+POT_PROVIDER_URL = os.environ.get("YTDLP_PO_PROVIDER", "")  # tuy chon: http://provider:8080
+# video ID binding + short lifespan -> tao moi lan extract (khong cache toan cuc).
 BASE_YDL_OPTS = {
     "noplaylist": True,
     "quiet": True,
@@ -51,43 +53,22 @@ BASE_YDL_OPTS = {
 }
 
 
-from pathlib import Path
-from contextlib import contextmanager
 import subprocess
-try:
-    import bgutil_pot
-    from bgutil_pot import BGUtil
-    _BGUTIL_OK = True
-    BGUTIL_VER = getattr(bgutil_pot, "__version__", None) or "unknown"
-except Exception:
-    _BGUTIL_OK = False
-    BGUTIL_VER = None
-
-
-@contextmanager
-def po_token_for(video_id=""):
-    """Cap 1 PO token tu bgutil trong vong 30s (datacenter IP). Tra ve token string."""
-    if not _BGUTIL_OK:
-        yield None
-    else:
-        try:
-            util = BGUtil()
-            token = util.get_po_token(video_id=video_id) if video_id else util.get_po_token()
-            yield token
-        except Exception as exc:
-            logger.warning("bgutil pot failed: %s", exc)
-            yield None
+# yt-dlp-ejs + bgutil-ytdlp-pot-provider la plugin (tuong tu nhu package),
+# duoc yt-dlp tu dong load tu yt_dlp_plugins/. Khong can import truc tiep.
+_BGUTIL_OK = True
+BGUTIL_VER = None
 
 
 def get_ejs_status():
-    """Kiem tra runtime JS + goi yt-dlp-ejs + PO token (de hien thi /ejs + log khi start)."""
+    """Kiem tra runtime JS + goi yt-dlp-ejs + PO token provider (hien thi /ejs)."""
     runtimes = {}
     for exe in ("deno", "node", "quickjs"):
         path = shutil.which(exe)
         ver = None
         if path:
             try:
-                flag = "--version" if exe != "deno" else "--version"
+                flag = "--version"
                 out = subprocess.run([path, flag], capture_output=True, text=True, timeout=10)
                 ver = (out.stdout or out.stderr or "").strip().splitlines()[0][:80] if (out.stdout or out.stderr) else None
             except Exception:
@@ -98,7 +79,10 @@ def get_ejs_status():
         ejs_ver = md.version("yt-dlp-ejs")
     except Exception:
         ejs_ver = None
-    # yt-dlp >= 2025.x moi ho tro js_runtimes/remote_components
+    try:
+        BGUTIL_VER = md.version("bgutil-ytdlp-pot-provider")
+    except Exception:
+        BGUTIL_VER = None
     opts_ok = True
     try:
         with yt_dlp.YoutubeDL(dict(BASE_YDL_OPTS, quiet=True, skip_download=True)):
@@ -107,9 +91,11 @@ def get_ejs_status():
         opts_ok = False
         logger.warning("EJS opts not supported by installed yt-dlp: %s", exc)
     ready = (any(v["ok"] for v in runtimes.values()) and opts_ok)
-    return {"runtimes": runtimes, "ejs_package": ejs_ver, "bgutil": (BGUTIL_VER, _BGUTIL_OK),
-            "opts_ok": opts_ok, "ready": ready, "po_provider": POT_PROVIDER_URL or "(khong cau hinh)",
+    return {"runtimes": runtimes, "ejs_package": ejs_ver, "bgutil_plugin": BGUTIL_VER,
+            "opts_ok": opts_ok, "ready": ready, "po_provider_url": POT_PROVIDER_URL or "(khong cau hinh)",
             "ytdlp": yt_dlp.version.__version__}
+
+
 
 
 EJS_STATUS = get_ejs_status()
@@ -163,10 +149,12 @@ def is_player_response_error(exc):
 def with_client(opts, clients):
     out = dict(opts)
     ya = {"player_client": list(clients)}
-    # PO token provider (datacenter IP thuong can) - giu nguyen qua ca client fallback.
+    # PO token: luon enable cho mweb (datacenter IP). bgutil http provider tu sinh token.
     # Tham khao: https://github.com/yt-dlp/yt-dlp/wiki/PO-Token-Guide
+    needs_pot = any(c in ("mweb", "ios", "web") for c in clients)
+    if needs_pot:
+        ya["po_token"] = "1"  # "1" = enable, de plugin/provider tu sinh va cache trong session
     if POT_PROVIDER_URL:
-        ya["po_token"] = "true"
         ya["pot_provider_url"] = POT_PROVIDER_URL
     out["extractor_args"] = {"youtube": ya}
     # Dam bao EJS opts luon di kem moi request (ke ca khi goi voi base_opts cu).
